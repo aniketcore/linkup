@@ -15,6 +15,13 @@
 	"images": {
 		"binding": "IMAGES"
 	},
+	"d1_databases": [
+		{
+			"binding": "database",
+			"database_name": "linkup-db",
+			"database_id": "cc8cd607-5234-41a5-9940-8ac04bca3a24"
+		}
+	],
 	"observability": {
 		"enabled": true
 	},

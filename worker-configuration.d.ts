@@ -4,6 +4,7 @@
 interface __BaseEnv_CloudflareEnv {
 	IMAGES: ImagesBinding;
 	ASSETS: Fetcher;
+	database: D1Database;
 }
 declare namespace Cloudflare {
 	interface Env extends __BaseEnv_CloudflareEnv {}
