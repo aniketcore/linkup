@@ -12,16 +12,32 @@ async function syncUserWithDatabase(user: User) {
     role: "member",
   };
 
-  const response = await fetch("/api/users/sync", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  // Prefer same-origin API route for normal dev/prod, then fall back to Wrangler's default port.
+  const endpoints = ["/api/users/sync", "http://localhost:8787/api/users/sync"];
+  let response: Response | null = null;
+
+  for (const endpoint of endpoints) {
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) break;
+    } catch {
+      // Try the next endpoint when the first one isn't reachable.
+    }
+  }
+
+  if (!response) {
+    throw new Error("Failed to reach the sync API. Start npm run dev (or npm run start for Wrangler).");
+  }
 
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
     throw new Error(data.error ?? "Failed to sync user.");
   }
 }

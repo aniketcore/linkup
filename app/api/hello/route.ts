@@ -1,4 +1,6 @@
-export async function GET(_request: Request, env: Cloudflare.Env) {
+import { env } from "cloudflare:workers";
+
+export async function GET(_request: Request) {
   const database = env.database;
 
   if (!database) {

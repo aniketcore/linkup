@@ -1,4 +1,6 @@
-export async function POST(request: Request, env: Cloudflare.Env) {
+import { env } from "cloudflare:workers";
+
+export async function POST(request: Request) {
   const database = env.database;
 
   if (!database) {
