@@ -18,19 +18,26 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-const hasRequiredConfig = Object.values(firebaseConfig).every(Boolean);
+const hasRequiredConfig = Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId);
 
 if (!hasRequiredConfig) {
   console.warn("Firebase config is missing. Add your Vite env values to .env.local");
 }
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+let app;
+let auth;
+let googleProvider;
 
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({
-  prompt: "select_account",
-});
+if (hasRequiredConfig) {
+  app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  googleProvider = new GoogleAuthProvider();
+  googleProvider.setCustomParameters({
+    prompt: "select_account",
+  });
+}
+
+export { auth, googleProvider };
 
 export async function signInWithGoogle() {
   if (!hasRequiredConfig) {
@@ -44,10 +51,15 @@ export async function signInWithGoogle() {
 }
 
 export async function signOutUser() {
+  if (!auth) return;
   await signOut(auth);
 }
 
 export function onAuthStateChanged(callback: (user: User | null) => void) {
+  if (!auth) {
+    callback(null);
+    return () => {};
+  }
   return firebaseOnAuthStateChanged(auth, callback);
 }
 

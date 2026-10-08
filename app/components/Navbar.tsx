@@ -1,11 +1,37 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AccessibilityModal from "./AccessibilityModal";
 
 interface NavbarProps {
   onLoginClick?: () => void;
   onRegisterClick?: () => void;
+}
+
+interface SessionUser {
+  id: string;
+  email: string;
+  name: string | null;
+  role: "applicant" | "checker" | "approver" | "citizen" | "admin";
+}
+
+const SESSION_KEY = "linkup_session_token";
+const USER_KEY = "linkup_user";
+
+function getRoleDashboardPath(role: SessionUser["role"] | string) {
+  switch (role) {
+    case "checker":
+      return "/dashboard/checker";
+    case "approver":
+      return "/dashboard/approver";
+    case "citizen":
+      return "/dashboard/citizen";
+    case "admin":
+      return "/dashboard";
+    case "applicant":
+    default:
+      return "/dashboard/applicant";
+  }
 }
 
 export default function Navbar({ onLoginClick, onRegisterClick }: NavbarProps) {
@@ -14,6 +40,7 @@ export default function Navbar({ onLoginClick, onRegisterClick }: NavbarProps) {
   const [language, setLanguage] = useState<"en" | "hi">("en");
   const [accessibilityOpen, setAccessibilityOpen] = useState(false);
   const [isHighContrast, setIsHighContrast] = useState(false);
+  const [user, setUser] = useState<SessionUser | null>(null);
 
   const changeFontSize = (size: "sm" | "base" | "lg") => {
     setFontSize(size);
@@ -34,6 +61,50 @@ export default function Navbar({ onLoginClick, onRegisterClick }: NavbarProps) {
         document.documentElement.classList.remove("high-contrast");
       }
     }
+  };
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem(USER_KEY);
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        localStorage.removeItem(USER_KEY);
+      }
+    }
+
+    const token = localStorage.getItem(SESSION_KEY);
+    if (!token) return;
+
+    fetch("/api/auth/me", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Session invalid");
+        }
+
+        const data = await response.json();
+        if (data?.ok && data.user) {
+          const nextUser = data.user as SessionUser;
+          localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+          setUser(nextUser);
+        }
+      })
+      .catch(() => {
+        localStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem(USER_KEY);
+        setUser(null);
+      });
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(USER_KEY);
+    setUser(null);
+    window.location.href = "/";
   };
 
   return (
@@ -202,21 +273,41 @@ export default function Navbar({ onLoginClick, onRegisterClick }: NavbarProps) {
                 className="h-14 sm:h-16 w-auto object-contain"
               />
             </div>
-            <div className="hidden sm:flex flex-col gap-1.5 border-l border-slate-200 pl-4">
-              <button
-                type="button"
-                onClick={onLoginClick}
-                className="inline-flex items-center justify-center rounded bg-[#003366] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#002244] shadow-sm transition-colors"
-              >
-                Portal Login
-              </button>
-              <button
-                type="button"
-                onClick={onRegisterClick}
-                className="inline-flex items-center justify-center rounded border border-[#003366] bg-white px-3 py-1 text-xs font-bold text-[#003366] hover:bg-slate-50 transition-colors"
-              >
-                New Registration
-              </button>
+            <div className="hidden sm:flex items-center gap-1.5 border-l border-slate-200 pl-4">
+              {user ? (
+                <>
+                  <a
+                    href={getRoleDashboardPath(user.role)}
+                    className="inline-flex items-center justify-center rounded bg-[#003366] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#002244] shadow-sm transition-colors"
+                  >
+                    Dashboard
+                  </a>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="inline-flex items-center justify-center rounded border border-[#003366] bg-white px-3 py-1.5 text-xs font-bold text-[#003366] hover:bg-slate-50 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={onLoginClick}
+                    className="inline-flex items-center justify-center rounded bg-[#003366] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#002244] shadow-sm transition-colors"
+                  >
+                    Portal Login
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onRegisterClick}
+                    className="inline-flex items-center justify-center rounded border border-[#003366] bg-white px-3 py-1.5 text-xs font-bold text-[#003366] hover:bg-slate-50 transition-colors"
+                  >
+                    New Registration
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -274,28 +365,28 @@ export default function Navbar({ onLoginClick, onRegisterClick }: NavbarProps) {
           </div>
 
           {/* Quick Search in Nav */}
-          <div className="hidden sm:flex items-center py-2">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const el = document.getElementById("app-search");
-                if (el) el.focus();
-              }}
-              className="flex items-center bg-white rounded overflow-hidden"
-            >
-              <input
-                type="text"
-                placeholder="Search Application..."
-                className="px-2.5 py-1 text-xs text-slate-800 outline-none w-44"
-              />
-              <button
-                type="submit"
-                className="bg-[#ea580c] text-white px-2.5 py-1 text-xs font-bold hover:bg-[#c2410c]"
+            <div className="hidden sm:flex flex-col md:flex-row items-center gap-2 py-2">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const el = document.getElementById("app-search");
+                  if (el) el.focus();
+                }}
+                className="flex items-center bg-white rounded overflow-hidden"
               >
-                🔍
-              </button>
-            </form>
-          </div>
+                <input
+                  type="text"
+                  placeholder="Search Application..."
+                  className="px-2.5 py-1 text-xs text-slate-800 outline-none w-44"
+                />
+                <button
+                  type="submit"
+                  className="bg-[#ea580c] text-white px-2.5 py-1 text-xs font-bold hover:bg-[#c2410c]"
+                >
+                  🔍
+                </button>
+              </form>
+            </div>
 
           {/* Mobile hamburger */}
           <div className="flex md:hidden w-full items-center justify-between py-2">
@@ -331,19 +422,38 @@ export default function Navbar({ onLoginClick, onRegisterClick }: NavbarProps) {
             <a href="#tracking" className="block py-1 hover:text-amber-300">Citizen Status Inquiry</a>
             <a href="#features" className="block py-1 hover:text-amber-300">Key Features</a>
             <a href="#sop" className="block py-1 hover:text-amber-300">Standard Operating Procedure</a>
-            <div className="pt-2 border-t border-[#164e7a] flex gap-2">
-              <button
-                onClick={onLoginClick}
-                className="w-1/2 rounded bg-[#ea580c] py-1.5 font-bold text-white text-center"
-              >
-                Login
-              </button>
-              <button
-                onClick={onRegisterClick}
-                className="w-1/2 rounded border border-white py-1.5 font-bold text-white text-center"
-              >
-                Register
-              </button>
+            <div className="pt-2 border-t border-[#164e7a] flex flex-col gap-2">
+              {user ? (
+                <>
+                  <a
+                    href={getRoleDashboardPath(user.role)}
+                    className="w-full rounded bg-[#ea580c] py-1.5 font-bold text-white text-center"
+                  >
+                    Open Dashboard
+                  </a>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full rounded border border-white py-1.5 font-bold text-white text-center"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={onLoginClick}
+                    className="w-full rounded bg-[#ea580c] py-1.5 font-bold text-white text-center"
+                  >
+                    Login
+                  </button>
+                  <button
+                    onClick={onRegisterClick}
+                    className="w-full rounded border border-white py-1.5 font-bold text-white text-center"
+                  >
+                    Register
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
