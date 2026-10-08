@@ -85,15 +85,16 @@ export function getBearerToken(request: Request): string | null {
   return url.searchParams.get("token");
 }
 
-export async function getSessionUser(database: D1Database, uid: string): Promise<null | { id: string; email: string; name: string | null; role: Role; mobile?: string | null; department_id?: number | null }> {
+export async function getSessionUser(database: D1Database, uid: string): Promise<null | { id: string; email: string; name: string | null; role: Role; mobile?: string | null; department_id?: number | null; department_name?: string | null }> {
   if (!uid) return null;
 
   const user = await database
     .prepare(
       `
-        SELECT id, email, name, role, mobile, department_id
-        FROM users
-        WHERE id = ?
+        SELECT u.id, u.email, u.name, u.role, u.mobile, u.department_id, d.name as department_name
+        FROM users u
+        LEFT JOIN departments d ON u.department_id = d.id
+        WHERE u.id = ?
       `
     )
     .bind(uid)
@@ -104,6 +105,7 @@ export async function getSessionUser(database: D1Database, uid: string): Promise
       role: string;
       mobile: string | null;
       department_id: number | null;
+      department_name: string | null;
     }>();
 
   if (!user) return null;
@@ -115,5 +117,6 @@ export async function getSessionUser(database: D1Database, uid: string): Promise
     role: normalizeRole(user.role),
     mobile: user.mobile,
     department_id: user.department_id,
+    department_name: user.department_name,
   };
 }

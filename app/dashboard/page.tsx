@@ -1,21 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-
-// Mock database of all applications in the system
-const allApplications = [
-  { id: "BP-2026-000010", project: "Skyline Green Heights", status: "draft", department: "Town Planning", applicant: "Apex Infrastructure", date: "10 Oct 2026", progress: 10 },
-  { id: "BP-2026-000011", project: "City Center Mall", status: "needs_correction", department: "Fire & Safety", applicant: "City Builders", date: "09 Oct 2026", progress: 25 },
-  { id: "BP-2026-000012", project: "Lotus Residency Phase II", status: "scrutiny", department: "Town Planning", applicant: "Metroline Realty", date: "08 Oct 2026", progress: 40 },
-  { id: "BP-2026-000013", project: "Riverside Infra", status: "awaiting_approval", department: "Environment", applicant: "Riverside Co", date: "07 Oct 2026", progress: 75 },
-  { id: "BP-2026-000014", project: "Metro Point Retail Hub", status: "approved", department: "Town Planning", applicant: "Metro Infra", date: "05 Oct 2026", progress: 100 },
-];
+import { KanbanCard } from "../components/KanbanCard";
+import NewApplicationModal from "../components/NewApplicationModal";
+import PublicRecordModal from "../components/PublicRecordModal";
+import { ApplicationType } from "../types";
 
 export default function UnifiedKanbanDashboard() {
   const router = useRouter();
-  const [role, setRole] = useState<string>("applicant");
+  const [actualRole, setActualRole] = useState<string>("applicant");
+  const [simulatedRole, setSimulatedRole] = useState<string>("applicant");
+  const [departmentName, setDepartmentName] = useState<string | null>(null);
+  const [showOnlyMyDept, setShowOnlyMyDept] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [allApplications, setAllApplications] = useState<ApplicationType[]>([]);
+  const [isNewAppModalOpen, setIsNewAppModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ id?: string; name?: string; email?: string } | null>(null);
+  const [selectedRecordApp, setSelectedRecordApp] = useState<ApplicationType | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("linkup_session_token");
@@ -24,79 +26,162 @@ export default function UnifiedKanbanDashboard() {
       return;
     }
 
-    try {
-      const userStr = localStorage.getItem("linkup_user");
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        setRole(user.role || "applicant");
-      }
-    } catch (e) {
-      // ignore
-    }
-    setLoading(false);
+      // Securely verify role with backend instead of trusting localStorage client-side
+      fetch("/api/auth/me", {
+        headers: { "Authorization": `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then((authData: any) => {
+        if (authData.ok && authData.user) {
+          const userRole = authData.user.role || "applicant";
+          setActualRole(userRole);
+          setSimulatedRole(userRole);
+          setCurrentUser(authData.user);
+          if (authData.user.department_name) {
+            setDepartmentName(authData.user.department_name);
+          }
+        } else {
+          router.replace("/");
+        }
+      })
+      .catch(() => router.replace("/"));
+    
+    loadApplications();
   }, [router]);
+
+  const loadApplications = useCallback(() => {
+    fetch("/api/applications")
+      .then(res => res.json())
+      .then((data: any) => {
+        if (data.success) {
+          const formatted = data.applications.map((app: any) => ({
+            ...app,
+            date: new Date(app.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+          }));
+          setAllApplications(formatted);
+        }
+      })
+      .catch(err => console.error("Failed to load apps:", err))
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
 
   if (loading) {
     return <div className="min-h-screen bg-[#f1f5f9] flex items-center justify-center font-bold text-[#003366]">Loading Workspace...</div>;
   }
 
   // Filter columns
-  const draftsAndCorrections = allApplications.filter(a => a.status === "draft" || a.status === "needs_correction");
-  const underScrutiny = allApplications.filter(a => a.status === "scrutiny");
-  const awaitingApproval = allApplications.filter(a => a.status === "awaiting_approval");
-  const approved = allApplications.filter(a => a.status === "approved");
+  // Filter applications if the user wants to see only their department's queue
+  const displayApps = (simulatedRole === "checker" || simulatedRole === "approver") && showOnlyMyDept && departmentName 
+    ? allApplications.filter(a => a.department === departmentName) 
+    : allApplications;
+
+  const draftsAndCorrections = displayApps.filter(a => {
+    const s = a.status?.toLowerCase();
+    return s === "draft" || s === "needs_correction";
+  });
+  const underScrutiny = displayApps.filter(a => {
+    const s = a.status?.toLowerCase();
+    return s === "scrutiny" || s === "submitted";
+  });
+  const awaitingApproval = displayApps.filter(a => {
+    const s = a.status?.toLowerCase();
+    return s === "awaiting_approval";
+  });
+  const approved = displayApps.filter(a => {
+    const s = a.status?.toLowerCase();
+    return s === "approved";
+  });
 
   // Helper to render card buttons based on role
-  const renderCardActions = (app: typeof allApplications[0]) => {
-    if (role === "applicant") {
+  const renderCardActions = (app: ApplicationType) => {
+    // 1. Admins and Citizens are strictly read-only on the unified board
+    if (simulatedRole === "admin" || simulatedRole === "citizen") {
+      return (
+        <button
+          onClick={() => setSelectedRecordApp(app)}
+          className="rounded bg-[#0b3b60] hover:bg-[#002244] text-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide w-full cursor-pointer transition-colors"
+        >
+          View Public Record
+        </button>
+      );
+    }
+
+    // 2. Final approved cards are permanently locked from modifications
+    if (app.status === "approved") {
+      return (
+        <button
+          onClick={() => setSelectedRecordApp(app)}
+          className="rounded bg-[#0b3b60] hover:bg-[#002244] text-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide w-full cursor-pointer transition-colors"
+        >
+          View Public Record
+        </button>
+      );
+    }
+
+    // 3. Government Staff (Checker/Approver) Role Scoping
+    if (simulatedRole === "checker" || simulatedRole === "approver") {
+      // CRITICAL SCOPE CHECK: Staff can ONLY action cards actively assigned to their specific department
+      if (departmentName && app.department !== departmentName) {
+        return <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide italic">Not in your department</span>;
+      }
+
+      if (simulatedRole === "checker" && app.status === "scrutiny") {
+        return (
+          <div className="flex gap-2 w-full">
+            <button className="flex-1 rounded bg-emerald-700 hover:bg-emerald-800 px-2 py-1.5 text-[10px] font-bold text-white uppercase tracking-wide">Verify</button>
+            <button className="flex-1 rounded bg-[#ea580c] hover:bg-[#c2410c] px-2 py-1.5 text-[10px] font-bold text-white uppercase tracking-wide">Send Back</button>
+          </div>
+        );
+      }
+
+      if (simulatedRole === "approver" && app.status === "awaiting_approval") {
+        return (
+          <div className="flex gap-1 w-full">
+            <button className="flex-1 rounded bg-emerald-700 hover:bg-emerald-800 px-2 py-1.5 text-[9px] font-bold text-white uppercase tracking-wide">Approve</button>
+            <button className="flex-1 rounded bg-red-700 hover:bg-red-800 px-2 py-1.5 text-[9px] font-bold text-white uppercase tracking-wide">Decline</button>
+            <button className="flex-1 rounded bg-white border border-slate-400 hover:bg-slate-100 text-slate-700 px-2 py-1.5 text-[9px] font-bold uppercase tracking-wide">Hold</button>
+          </div>
+        );
+      }
+    }
+
+    // 4. Applicant Actions
+    if (simulatedRole === "applicant") {
       if (app.status === "needs_correction") {
         return <button className="rounded bg-[#ea580c] hover:bg-[#c2410c] px-3 py-1.5 text-[10px] font-bold text-white uppercase tracking-wide w-full">Upload Missing Docs</button>;
       }
-      return <button className="rounded border border-[#003366] text-[#003366] hover:bg-slate-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide w-full">View Details</button>;
-    }
-
-    if (role === "checker" && app.status === "scrutiny") {
       return (
-        <div className="flex gap-2 w-full">
-          <button className="flex-1 rounded bg-emerald-700 hover:bg-emerald-800 px-2 py-1.5 text-[10px] font-bold text-white uppercase tracking-wide">Verify</button>
-          <button className="flex-1 rounded bg-[#ea580c] hover:bg-[#c2410c] px-2 py-1.5 text-[10px] font-bold text-white uppercase tracking-wide">Send Back</button>
-        </div>
+        <button
+          onClick={() => setSelectedRecordApp(app)}
+          className="rounded border border-[#003366] text-[#003366] hover:bg-slate-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide w-full cursor-pointer transition-colors"
+        >
+          View Details
+        </button>
       );
-    }
-
-    if (role === "approver" && app.status === "awaiting_approval") {
-      return (
-        <div className="flex gap-1 w-full">
-          <button className="flex-1 rounded bg-emerald-700 hover:bg-emerald-800 px-2 py-1.5 text-[9px] font-bold text-white uppercase tracking-wide">Approve</button>
-          <button className="flex-1 rounded bg-red-700 hover:bg-red-800 px-2 py-1.5 text-[9px] font-bold text-white uppercase tracking-wide">Decline</button>
-          <button className="flex-1 rounded bg-white border border-slate-400 hover:bg-slate-100 text-slate-700 px-2 py-1.5 text-[9px] font-bold uppercase tracking-wide">Hold</button>
-        </div>
-      );
-    }
-
-    if (role === "citizen" || role === "admin" || app.status === "approved") {
-      return <button className="rounded bg-[#0b3b60] hover:bg-[#002244] text-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide w-full">View Public Record</button>;
     }
 
     return <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide italic">No actions available</span>;
   };
 
   const getRoleTitle = () => {
-    switch (role) {
-      case "checker": return "Department Scrutiny Mode";
-      case "approver": return "Department Sign-off Mode";
-      case "applicant": return "Applicant Submission Mode";
-      case "citizen": return "Public Visibility Mode";
-      case "admin": return "System Admin Override Mode";
+    switch (simulatedRole) {
+      case "checker": return "Checker";
+      case "approver": return "Approver";
+      case "applicant": return "Applicant";
+      case "citizen": return "Citizen";
+      case "admin": return "Super Admin";
       default: return "Workspace";
     }
   };
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-slate-900 font-sans flex flex-col">
-      <div className="w-full px-4 py-6 sm:px-6 lg:px-8 border-b-2 border-[#003366] bg-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-10">
+      {/* Top Navbar */}
+      <div className="w-full px-4 py-4 sm:px-6 lg:px-8 border-b border-slate-300 bg-white flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-20">
         <div className="flex items-center gap-4">
-          <img src="/emblem.svg" alt="State Emblem of India" className="h-12 w-auto" />
+          <img src="/emblem.svg" alt="State Emblem of India" className="h-10 w-auto" />
           <div className="flex flex-col">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[#ea580c]">
               National Single-Window Portal
@@ -110,17 +195,66 @@ export default function UnifiedKanbanDashboard() {
           <div className="flex items-center gap-2 rounded bg-slate-100 px-3 py-1.5 border border-slate-300">
             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
             <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">
-              {getRoleTitle()}
+              {departmentName ? `${departmentName} • ` : ""}{getRoleTitle()}
             </span>
           </div>
-          {role === "applicant" && (
-            <button className="inline-flex items-center justify-center rounded bg-[#ea580c] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#c2410c] border border-[#c2410c] transition-colors uppercase tracking-wide">
+          <button
+            onClick={() => {
+              localStorage.removeItem("linkup_session_token");
+              localStorage.removeItem("linkup_user");
+              router.replace("/");
+            }}
+            className="rounded bg-[#003366] px-4 py-1.5 text-[10px] font-bold text-white uppercase tracking-wide hover:bg-[#002244] transition-colors"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+
+      {/* Action Sub-Toolbar */}
+      <div className="w-full px-4 py-3 sm:px-6 lg:px-8 bg-slate-50 border-b-2 border-[#003366] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm z-10 sticky top-[73px]">
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          {actualRole === "admin" && (
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Simulate:</span>
+              <select
+                value={simulatedRole}
+                onChange={(e) => setSimulatedRole(e.target.value)}
+                className="rounded border border-slate-300 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-800 outline-none focus:border-[#ea580c] shadow-sm"
+              >
+                <option value="admin">🦸‍♂️ Admin Override</option>
+                <option value="applicant">👤 Applicant Mode</option>
+                <option value="checker">🕵️‍♂️ Checker Mode</option>
+                <option value="approver">✍️ Approver Mode</option>
+                <option value="citizen">👁️ Citizen Mode</option>
+              </select>
+            </div>
+          )}
+          
+          {(simulatedRole === "checker" || simulatedRole === "approver") && departmentName && (
+            <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 border border-slate-300 rounded shadow-sm hover:bg-slate-50 transition-colors">
+              <input 
+                type="checkbox" 
+                checked={showOnlyMyDept} 
+                onChange={e => setShowOnlyMyDept(e.target.checked)} 
+                className="rounded border-slate-400 text-[#003366] focus:ring-[#003366] accent-[#003366]"
+              />
+              <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">
+                Show My Dept Only
+              </span>
+            </label>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
+          {simulatedRole === "applicant" && (
+            <button
+              onClick={() => setIsNewAppModalOpen(true)}
+              className="inline-flex items-center justify-center rounded bg-[#ea580c] px-4 py-1.5 text-[10px] font-bold text-white shadow-sm hover:bg-[#c2410c] border border-[#c2410c] transition-colors uppercase tracking-wide cursor-pointer"
+            >
               + New Application
             </button>
           )}
-          <a href="/" className="inline-flex items-center justify-center rounded bg-[#003366] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#002244] border border-[#002244] transition-colors uppercase tracking-wide">
-            Sign Out
-          </a>
         </div>
       </div>
 
@@ -135,19 +269,7 @@ export default function UnifiedKanbanDashboard() {
             </div>
             <div className="p-3 space-y-3 overflow-y-auto flex-1">
               {draftsAndCorrections.map(app => (
-                <div key={app.id} className={`rounded border bg-white p-3 shadow-sm border-l-4 transition-colors ${app.status === 'needs_correction' ? 'border-amber-300 border-l-amber-500 hover:border-amber-500' : 'border-slate-300 border-l-slate-400 hover:border-slate-500'}`}>
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-[10px] font-bold text-slate-500">{app.id}</span>
-                    <span className={`rounded-sm px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${app.status === 'needs_correction' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
-                      {app.status === 'needs_correction' ? '⚠️ Action Required' : 'Draft'}
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-bold text-[#003366] uppercase mb-1">{app.project}</h3>
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-3">{app.applicant}</p>
-                  <div className="pt-3 border-t border-slate-100 mt-auto flex items-center justify-between">
-                    {renderCardActions(app)}
-                  </div>
-                </div>
+                <KanbanCard key={app.id} app={app} columnType="draft" renderActions={renderCardActions} />
               ))}
             </div>
           </div>
@@ -160,22 +282,7 @@ export default function UnifiedKanbanDashboard() {
             </div>
             <div className="p-3 space-y-3 overflow-y-auto flex-1">
               {underScrutiny.map(app => (
-                <div key={app.id} className="rounded border border-slate-300 bg-white p-3 shadow-sm border-l-4 border-l-blue-500 hover:border-blue-500 transition-colors">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-[10px] font-bold text-slate-500">{app.id}</span>
-                    <span className="rounded-sm bg-[#003366]/10 border border-[#003366]/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#0b3b60]">{app.department}</span>
-                  </div>
-                  <h3 className="text-sm font-bold text-[#003366] uppercase mb-1">{app.project}</h3>
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-3">{app.applicant}</p>
-                  
-                  <div className="mb-3 h-1.5 rounded bg-slate-200 overflow-hidden">
-                    <div className="h-1.5 bg-blue-500" style={{ width: `${app.progress}%` }} />
-                  </div>
-
-                  <div className="pt-3 border-t border-slate-100 mt-auto flex items-center justify-between">
-                    {renderCardActions(app)}
-                  </div>
-                </div>
+                <KanbanCard key={app.id} app={app} columnType="scrutiny" renderActions={renderCardActions} />
               ))}
             </div>
           </div>
@@ -188,22 +295,7 @@ export default function UnifiedKanbanDashboard() {
             </div>
             <div className="p-3 space-y-3 overflow-y-auto flex-1">
               {awaitingApproval.map(app => (
-                <div key={app.id} className="rounded border border-slate-300 bg-white p-3 shadow-sm border-l-4 border-l-[#ea580c] hover:border-[#ea580c] transition-colors">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-[10px] font-bold text-slate-500">{app.id}</span>
-                    <span className="rounded-sm bg-[#ea580c]/10 border border-[#ea580c]/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#c2410c]">{app.department}</span>
-                  </div>
-                  <h3 className="text-sm font-bold text-[#003366] uppercase mb-1">{app.project}</h3>
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-3">{app.applicant}</p>
-                  
-                  <div className="mb-3 h-1.5 rounded bg-slate-200 overflow-hidden">
-                    <div className="h-1.5 bg-[#ea580c]" style={{ width: `${app.progress}%` }} />
-                  </div>
-
-                  <div className="pt-3 border-t border-slate-100 mt-auto flex items-center justify-between">
-                    {renderCardActions(app)}
-                  </div>
-                </div>
+                <KanbanCard key={app.id} app={app} columnType="awaiting" renderActions={renderCardActions} />
               ))}
             </div>
           </div>
@@ -216,28 +308,28 @@ export default function UnifiedKanbanDashboard() {
             </div>
             <div className="p-3 space-y-3 overflow-y-auto flex-1">
               {approved.map(app => (
-                <div key={app.id} className="rounded border border-emerald-300 bg-emerald-50 p-3 shadow-sm border-l-4 border-l-emerald-600 hover:border-emerald-500 transition-colors">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-[10px] font-bold text-emerald-800">{app.id}</span>
-                    <span className="rounded-sm bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-800">✅ Issued</span>
-                  </div>
-                  <h3 className="text-sm font-bold text-[#003366] uppercase mb-1">{app.project}</h3>
-                  <p className="text-[10px] font-semibold text-emerald-700 uppercase tracking-wide mb-3">{app.applicant}</p>
-                  
-                  <div className="mb-3 h-1.5 rounded bg-slate-200 overflow-hidden">
-                    <div className="h-1.5 bg-emerald-600" style={{ width: `${app.progress}%` }} />
-                  </div>
-
-                  <div className="pt-3 border-t border-emerald-200 mt-auto flex items-center justify-between">
-                    {renderCardActions(app)}
-                  </div>
-                </div>
+                <KanbanCard key={app.id} app={app} columnType="approved" renderActions={renderCardActions} />
               ))}
             </div>
           </div>
 
         </div>
       </div>
+
+      <NewApplicationModal
+        isOpen={isNewAppModalOpen}
+        onClose={() => setIsNewAppModalOpen(false)}
+        onApplicationCreated={() => {
+          loadApplications();
+        }}
+        currentUser={currentUser}
+      />
+
+      <PublicRecordModal
+        isOpen={Boolean(selectedRecordApp)}
+        onClose={() => setSelectedRecordApp(null)}
+        application={selectedRecordApp}
+      />
     </div>
   );
 }

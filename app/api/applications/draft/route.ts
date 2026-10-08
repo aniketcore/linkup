@@ -11,6 +11,13 @@ export async function POST(request: Request) {
 
     await database
       .prepare(
+        `INSERT OR IGNORE INTO users (id, name, email, role, status) VALUES (?, ?, ?, 'applicant', 'active')`
+      )
+      .bind(applicantUserId, "Applicant", "applicant@example.com")
+      .run();
+
+    await database
+      .prepare(
         `
           INSERT INTO applications (
             id, application_number, applicant_user_id, status, current_department_id,

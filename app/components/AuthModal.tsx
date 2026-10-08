@@ -78,7 +78,7 @@ export default function AuthModal({ isOpen, initialMode, onClose }: AuthModalPro
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const data: any = await response.json();
 
       if (!response.ok || !data?.ok) {
         throw new Error(data?.error || "Authentication failed.");

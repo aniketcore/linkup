@@ -31,7 +31,7 @@ async function execSqlStatements(database: D1Database, statements: string[]) {
   for (const statement of statements) {
     const trimmed = statement.trim();
     if (!trimmed) continue;
-    await database.exec(trimmed);
+    await database.prepare(trimmed).run();
   }
 }
 
@@ -148,6 +148,12 @@ export async function ensureDatabaseReady() {
       FOREIGN KEY (application_id) REFERENCES applications(id),
       FOREIGN KEY (department_id) REFERENCES departments(id)
     )`,
+    `CREATE INDEX IF NOT EXISTS idx_departments_sort ON departments(sort_order)`,
+    `CREATE INDEX IF NOT EXISTS idx_users_role_dept ON users(role, department_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_apps_dept_status ON applications(current_department_id, status)`,
+    `CREATE INDEX IF NOT EXISTS idx_apps_applicant ON applications(applicant_user_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_documents_app_id ON documents(application_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_workflow_app_id ON workflow_actions(application_id)`
   ]);
 
   await seedDefaultDepartments(database);
@@ -241,7 +247,7 @@ export async function generateApplicationNumber(database: D1Database) {
         SELECT application_number
         FROM applications
         WHERE application_number LIKE ?
-        ORDER BY created_at DESC
+        ORDER BY application_number DESC
         LIMIT 1
       `
     )

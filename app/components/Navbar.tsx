@@ -86,7 +86,7 @@ export default function Navbar({ onLoginClick, onRegisterClick }: NavbarProps) {
           throw new Error("Session invalid");
         }
 
-        const data = await response.json();
+        const data: any = await response.json();
         if (data?.ok && data.user) {
           const nextUser = data.user as SessionUser;
           localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
