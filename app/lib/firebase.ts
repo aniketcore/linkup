@@ -4,6 +4,8 @@ import {
   GoogleAuthProvider,
   onAuthStateChanged as firebaseOnAuthStateChanged,
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
   type User,
 } from "firebase/auth";
@@ -47,6 +49,22 @@ export async function signInWithGoogle() {
   }
 
   const result = await signInWithPopup(auth, googleProvider);
+  return result.user;
+}
+
+export async function loginWithEmail(email: string, pass: string) {
+  if (!hasRequiredConfig) {
+    throw new Error("Firebase is not configured.");
+  }
+  const result = await signInWithEmailAndPassword(auth, email, pass);
+  return result.user;
+}
+
+export async function registerWithEmail(email: string, pass: string) {
+  if (!hasRequiredConfig) {
+    throw new Error("Firebase is not configured.");
+  }
+  const result = await createUserWithEmailAndPassword(auth, email, pass);
   return result.user;
 }
 

@@ -59,28 +59,35 @@ export default function DashboardOverviewPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <div className="min-h-screen bg-[#f1f5f9] text-slate-900 font-sans">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">LinkUp portal</p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">Government dashboards</h1>
+        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-2 border-[#003366] pb-4">
+          <div className="flex items-center gap-4">
+            <img src="/emblem.svg" alt="State Emblem of India" className="h-16 w-auto" />
+            <div className="flex flex-col">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#ea580c]">
+                National Single-Window Portal
+              </p>
+              <h1 className="text-2xl font-extrabold text-[#003366] uppercase tracking-tight">
+                Government Dashboards (BPAMS)
+              </h1>
+            </div>
           </div>
           <a
             href="/"
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50"
+            className="inline-flex items-center justify-center rounded bg-[#003366] px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#002244] border border-[#002244] transition-colors uppercase tracking-wide"
           >
-            Back to home
+            ← Back to Home
           </a>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {quickMetrics.map((item) => (
-            <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm text-slate-500">{item.label}</p>
-              <div className="mt-3 flex items-end justify-between gap-3">
-                <span className="text-3xl font-bold text-slate-900">{item.value}</span>
-                <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
+            <div key={item.label} className="rounded border-t-4 border-t-[#003366] border border-slate-300 bg-white p-4 shadow-sm">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{item.label}</p>
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <span className="text-2xl font-extrabold text-[#0b3b60]">{item.value}</span>
+                <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 uppercase tracking-wide">
                   {item.delta}
                 </span>
               </div>
@@ -94,36 +101,43 @@ export default function DashboardOverviewPage() {
               <a
                 key={card.title}
                 href={card.href}
-                className="group rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-md"
+                className="group rounded border border-slate-300 bg-white shadow-sm transition hover:border-[#ea580c] hover:shadow-md flex flex-col overflow-hidden"
               >
-                <div className={`mb-4 h-2 rounded-full bg-gradient-to-r ${card.accent}`} />
-                <h2 className="text-xl font-bold text-slate-900">{card.title}</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{card.description}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {card.stats.map((stat) => (
-                    <span key={stat} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
-                      {stat}
-                    </span>
-                  ))}
+                <div className="bg-[#0b3b60] px-4 py-3 border-b-2 border-[#ea580c]">
+                  <h2 className="text-sm font-bold text-white uppercase tracking-wide">{card.title}</h2>
                 </div>
-                <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-blue-700">
-                  Open dashboard
-                  <span aria-hidden="true">→</span>
+                <div className="p-4 flex-1 flex flex-col">
+                  <p className="text-xs font-medium text-slate-700 leading-relaxed mb-4">{card.description}</p>
+                  <div className="flex flex-wrap gap-1.5 mt-auto">
+                    {card.stats.map((stat) => (
+                      <span key={stat} className="rounded bg-slate-100 border border-slate-200 px-2 py-1 text-[10px] font-bold text-[#0b3b60] uppercase">
+                        {stat}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#ea580c] uppercase tracking-wide">
+                    <span>Access Portal</span>
+                    <span aria-hidden="true" className="group-hover:translate-x-1 transition-transform">→</span>
+                  </div>
                 </div>
               </a>
             ))}
           </div>
 
-          <aside className="rounded-3xl border border-slate-200 bg-slate-900 p-6 text-white shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Priority queue</h2>
-              <span className="rounded-full bg-blue-500/20 px-2 py-1 text-xs font-semibold text-blue-200">Live</span>
+          <aside className="rounded border border-slate-300 bg-white shadow-sm overflow-hidden flex flex-col">
+            <div className="bg-[#003366] px-4 py-3 flex items-center justify-between border-b-2 border-[#ea580c]">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wide">Live Priority Queue</h2>
+              <span className="flex items-center gap-1.5 rounded bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                ACTIVE
+              </span>
             </div>
 
-            <ul className="mt-5 space-y-3">
-              {actions.map((action) => (
-                <li key={action} className="rounded-2xl border border-slate-700 bg-slate-800/80 p-3 text-sm text-slate-200">
-                  {action}
+            <ul className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
+              {actions.map((action, i) => (
+                <li key={i} className="flex gap-3 rounded border border-slate-200 bg-white p-3 text-xs font-medium text-slate-800 shadow-sm border-l-4 border-l-[#ea580c]">
+                  <span className="text-base leading-none">📢</span>
+                  <span>{action}</span>
                 </li>
               ))}
             </ul>
