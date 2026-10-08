@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <rect width="48" height="48" rx="12" fill="#1e3a8a"/>
+  <!-- Building outline -->
+  <path d="M12 38V18L24 9L36 18V38H12Z" fill="#2563eb" fill-opacity="0.2" stroke="#60a5fa" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Windows -->
+  <rect x="17" y="21" width="4" height="4" rx="0.5" fill="#93c5fd"/>
+  <rect x="27" y="21" width="4" height="4" rx="0.5" fill="#93c5fd"/>
+  <rect x="17" y="28" width="4" height="4" rx="0.5" fill="#93c5fd"/>
+  <rect x="27" y="28" width="4" height="4" rx="0.5" fill="#93c5fd"/>
+  <!-- Door / Archway -->
+  <path d="M21 38V33C21 31.8954 21.8954 31 23 31H25C26.1046 31 27 31.8954 27 33V38H21Z" fill="#38bdf8"/>
+  <!-- Approval Checkmark badge -->
+  <circle cx="34" cy="34" r="8" fill="#10b981" stroke="#ffffff" stroke-width="2"/>
+  <path d="M31 34L33 36L37 32" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
