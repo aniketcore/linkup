@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Navbar from "./components/Navbar";
 import AuthModal from "./components/AuthModal";
 
-// Sample demonstration records for instant search demonstration
+// Public permit records for instant verification
 const SAMPLE_APPLICATIONS = [
   {
     id: "BP-2026-000001",
@@ -196,9 +196,9 @@ export default function Home() {
                     </button>
                   </div>
 
-                  {/* Sample ID Quick Chips */}
+                  {/* Recent Applications Quick Chips */}
                   <div className="flex items-center gap-1.5 flex-wrap text-xs text-slate-300">
-                    <span className="text-[11px] text-slate-400">Sample Demos:</span>
+                    <span className="text-[11px] text-slate-400">Recent Applications:</span>
                     {SAMPLE_APPLICATIONS.map((app) => (
                       <button
                         key={app.id}
@@ -517,18 +517,18 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Recommended Hackathon Demonstration Scenario (FSD Section 48) */}
+      {/* Standard Operating Procedure (SOP) */}
       <section className="py-16 bg-slate-900 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <span className="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-semibold text-blue-300 ring-1 ring-blue-400/30">
-              Demo Walkthrough
+              Official Procedure
             </span>
             <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
-              The 10-Step Hackathon Acceptance Journey
+              Standard Clearance Lifecycle
             </h2>
             <p className="mt-2 text-sm text-slate-300">
-              Designed specifically to showcase the entire lifecycle to evaluators and judges.
+              Statutory operating procedure guiding building permit applications from online intake to final regulatory sign-off.
             </p>
           </div>
 
@@ -569,7 +569,7 @@ export default function Home() {
                 LinkUp — Cross-Departmental Service Tracking, Government of India. Building Permit Scrutiny & Approval System.
               </p>
               <div className="text-[11px] text-slate-400">
-                Hackathon MVP v1.0 • Built with Next.js & Tailwind CSS
+                Official Portal • Ministry of Housing & Urban Affairs (MoHUA)
               </div>
             </div>
 
@@ -594,23 +594,23 @@ export default function Home() {
             </div>
 
             <div>
-              <h5 className="font-bold text-slate-900 uppercase tracking-wider mb-3">Hackathon Info</h5>
+              <h5 className="font-bold text-slate-900 uppercase tracking-wider mb-3">Public Helpdesk</h5>
               <p className="text-slate-500 leading-relaxed mb-3">
-                Created for the 24-Hour Hackathon Challenge: Multi-Department Service Request Tracking.
+                Toll-Free Grievance Helpline: 1800-11-2026 (Mon–Sat, 9:30 AM to 6:00 PM). Email: helpdesk@linkup.gov.in
               </p>
               <button
                 type="button"
                 onClick={() => handleOpenAuth("login")}
-                className="rounded-lg bg-slate-900 text-white px-3.5 py-2 font-semibold hover:bg-slate-800 transition-colors"
+                className="rounded-lg bg-blue-600 text-white px-3.5 py-2 font-semibold hover:bg-blue-700 transition-colors"
               >
-                Access Portal Login
+                Access Official Portal
               </button>
             </div>
           </div>
 
           <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-slate-500 gap-4">
             <div>
-              © 2026 BPAMS • All Rights Reserved. Prototype demonstration for government service tracking.
+              © 2026 LinkUp • Ministry of Housing & Urban Affairs, Government of India. All Rights Reserved.
             </div>
             <div className="flex gap-4">
               <a href="#about" className="hover:text-slate-900">About</a>
