@@ -10,7 +10,7 @@ export function KanbanCard({
   columnType: 'draft' | 'scrutiny' | 'awaiting' | 'approved',
   renderActions: (app: ApplicationType) => React.ReactNode
 }) {
-  const isNeedsCorrection = app.status === 'needs_correction';
+  const isNeedsCorrection = app.status?.toLowerCase() === 'needs_correction';
   
   // Color mappings
   const containerClasses = {
@@ -81,8 +81,8 @@ export function KanbanCard({
                 </span>
               ))
             ) : (
-              <span className={`rounded-sm border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide ${approvalPillBg}`}>
-                ✓ {app.department}
+              <span className="text-[8px] font-bold uppercase tracking-wide text-slate-400 italic">
+                Pending initial clearance
               </span>
             )}
           </div>

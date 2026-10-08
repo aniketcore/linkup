@@ -12,20 +12,8 @@ interface AuthModalProps {
 const SESSION_KEY = "linkup_session_token";
 const USER_KEY = "linkup_user";
 
-function getDashboardPath(role: string) {
-  switch (role) {
-    case "checker":
-      return "/dashboard/checker";
-    case "approver":
-      return "/dashboard/approver";
-    case "citizen":
-      return "/dashboard/citizen";
-    case "admin":
-      return "/dashboard";
-    case "applicant":
-    default:
-      return "/dashboard/applicant";
-  }
+function getDashboardPath(_role?: string) {
+  return "/dashboard";
 }
 
 export default function AuthModal({ isOpen, initialMode, onClose }: AuthModalProps) {

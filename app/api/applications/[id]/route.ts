@@ -76,13 +76,14 @@ export async function GET(
     // Compute Department Clearance Status for Public Record
     const departmentsStatus = allDeptsResult.results.map((dept: any) => {
       let status = "pending";
-      if (app.status === "approved") {
+      const appStatusLower = app.status?.toLowerCase();
+      if (appStatusLower === "approved") {
         status = "approved";
       } else if (app.current_department_order) {
         if (dept.sort_order < app.current_department_order) {
           status = "approved";
         } else if (dept.sort_order === app.current_department_order) {
-          status = app.status === "awaiting_approval" ? "awaiting_approval" : "in_scrutiny";
+          status = appStatusLower === "awaiting_approval" ? "awaiting_approval" : "in_scrutiny";
         } else {
           status = "pending";
         }

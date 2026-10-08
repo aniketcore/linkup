@@ -1,5 +1,6 @@
 export type ApplicationType = { 
   id: string; 
+  uuid?: string;
   project: string; 
   status: string; 
   department: string; 

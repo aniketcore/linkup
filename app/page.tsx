@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import AuthModal from "./components/AuthModal";
 
@@ -63,9 +63,74 @@ export default function Home() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [searchQuery, setSearchQuery] = useState("BP-2026-000001");
-  const [activeSearchResult, setActiveSearchResult] = useState(SAMPLE_APPLICATIONS[0]);
+  const [activeSearchResult, setActiveSearchResult] = useState<any>(SAMPLE_APPLICATIONS[0]);
   const [searchError, setSearchError] = useState("");
   const [activeNoticeTab, setActiveNoticeTab] = useState<"public" | "news">("public");
+
+  const performSearch = async (queryStr: string) => {
+    const q = queryStr.trim().toUpperCase();
+    if (!q) return;
+
+    const found = SAMPLE_APPLICATIONS.find(
+      (app) => app.id.toUpperCase() === q || app.project.toLowerCase().includes(q.toLowerCase())
+    );
+
+    if (found) {
+      setActiveSearchResult(found);
+      setSearchError("");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/applications/${q}`);
+      const data: any = await res.json();
+
+      if (data.ok && data.application) {
+        const app = data.application;
+        const mappedResult = {
+          id: app.id,
+          project: app.building?.project_name || "Statutory Project",
+          type: app.building?.building_type || "Commercial / Residential",
+          location: `${app.building?.city || "Municipal City"} (${app.building?.ward || "Ward"}, ${app.building?.zone || "Zone"})`,
+          applicant: app.applicant?.name || "Official Applicant",
+          status: app.status === "approved" ? "Final Approved" : app.status === "awaiting_approval" ? "Awaiting Sign-off" : "Under Scrutiny",
+          statusBadge: app.status === "approved" ? "bg-emerald-700 text-white" : "bg-[#003366] text-white",
+          submittedDate: app.submission_date?.slice(0, 10) || "Recorded",
+          lastUpdated: new Date(app.last_updated_date || app.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          steps: [
+            { dept: "1. Submission Verification", status: "completed", date: app.submission_date?.slice(0, 10) || "Intake Cleared", note: "Application intake completed. Tracking ID issued." },
+            ...(app.departments || []).map((d: any, idx: number) => ({
+              dept: `${idx + 2}. ${d.name}`,
+              status: d.status === "approved" ? "completed" : d.status === "in_scrutiny" || d.status === "awaiting_approval" ? "active" : "pending",
+              date: d.status === "approved" ? "NOC Cleared" : d.status === "in_scrutiny" ? "Active Scrutiny" : "Queued",
+              note: d.status === "approved" ? "Clearance granted by Department Head." : d.status === "in_scrutiny" ? "Under active scrutiny by municipal officer." : "Awaiting sequential clearance.",
+            })),
+          ],
+        };
+        setActiveSearchResult(mappedResult);
+        setSearchError("");
+      } else {
+        setSearchError(`No official permit record found for "${queryStr}". Please check the application number.`);
+      }
+    } catch {
+      setSearchError(`Unable to query public registry for "${queryStr}". Please try again.`);
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const appParam = params.get("app");
+      if (appParam) {
+        setSearchQuery(appParam);
+        performSearch(appParam);
+        const trackingEl = document.getElementById("tracking");
+        if (trackingEl) {
+          trackingEl.scrollIntoView({ behavior: "smooth" });
+        }
+      }
+    }
+  }, []);
 
   const handleOpenAuth = (mode: "login" | "register") => {
     setAuthMode(mode);
@@ -74,16 +139,7 @@ export default function Home() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const query = searchQuery.trim().toUpperCase();
-    const found = SAMPLE_APPLICATIONS.find(
-      (app) => app.id.toUpperCase() === query || app.project.toLowerCase().includes(query.toLowerCase())
-    );
-    if (found) {
-      setActiveSearchResult(found);
-      setSearchError("");
-    } else {
-      setSearchError(`No official permit record found for "${searchQuery}". Please check the application number.`);
-    }
+    performSearch(searchQuery);
   };
 
   return (
@@ -450,7 +506,7 @@ export default function Home() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
-                      {activeSearchResult.steps.map((st, i) => (
+                      {activeSearchResult.steps.map((st: any, i: number) => (
                         <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                           <td className="p-3 font-bold text-slate-900 border-r border-slate-200">
                             {st.dept}

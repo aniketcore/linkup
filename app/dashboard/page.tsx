@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { KanbanCard } from "../components/KanbanCard";
 import NewApplicationModal from "../components/NewApplicationModal";
 import PublicRecordModal from "../components/PublicRecordModal";
+import WorkflowActionModal, { WorkflowActionType } from "../components/WorkflowActionModal";
 import { ApplicationType } from "../types";
 
 export default function UnifiedKanbanDashboard() {
@@ -18,6 +19,10 @@ export default function UnifiedKanbanDashboard() {
   const [isNewAppModalOpen, setIsNewAppModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ id?: string; name?: string; email?: string } | null>(null);
   const [selectedRecordApp, setSelectedRecordApp] = useState<ApplicationType | null>(null);
+  const [actionModalState, setActionModalState] = useState<{
+    app: ApplicationType;
+    actionType: WorkflowActionType;
+  } | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("linkup_session_token");
@@ -54,10 +59,22 @@ export default function UnifiedKanbanDashboard() {
       .then(res => res.json())
       .then((data: any) => {
         if (data.success) {
-          const formatted = data.applications.map((app: any) => ({
-            ...app,
-            date: new Date(app.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-          }));
+          const formatted = data.applications.map((app: any) => {
+            let formattedDate = app.date;
+            try {
+              const safeDateStr = String(app.date).includes('T') ? app.date : String(app.date).replace(' ', 'T') + 'Z';
+              const d = new Date(safeDateStr);
+              if (!isNaN(d.getTime())) {
+                formattedDate = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+              }
+            } catch {
+              // fallback
+            }
+            return {
+              ...app,
+              date: formattedDate
+            };
+          });
           setAllApplications(formatted);
         }
       })
@@ -74,7 +91,10 @@ export default function UnifiedKanbanDashboard() {
   // Filter columns
   // Filter applications if the user wants to see only their department's queue
   const displayApps = (simulatedRole === "checker" || simulatedRole === "approver") && showOnlyMyDept && departmentName 
-    ? allApplications.filter(a => a.department === departmentName) 
+    ? allApplications.filter(a => 
+        a.department === departmentName || 
+        (a.status?.toLowerCase() === "approved" && a.approved_by?.includes(departmentName))
+      ) 
     : allApplications;
 
   const draftsAndCorrections = displayApps.filter(a => {
@@ -96,8 +116,8 @@ export default function UnifiedKanbanDashboard() {
 
   // Helper to render card buttons based on role
   const renderCardActions = (app: ApplicationType) => {
-    // 1. Admins and Citizens are strictly read-only on the unified board
-    if (simulatedRole === "admin" || simulatedRole === "citizen") {
+    // 1. Citizen is strictly read-only on the unified board
+    if (simulatedRole === "citizen") {
       return (
         <button
           onClick={() => setSelectedRecordApp(app)}
@@ -120,28 +140,57 @@ export default function UnifiedKanbanDashboard() {
       );
     }
 
-    // 3. Government Staff (Checker/Approver) Role Scoping
-    if (simulatedRole === "checker" || simulatedRole === "approver") {
-      // CRITICAL SCOPE CHECK: Staff can ONLY action cards actively assigned to their specific department
-      if (departmentName && app.department !== departmentName) {
+    // 3. Government Staff (Checker/Approver) Role Scoping & Super Admin Override
+    if (simulatedRole === "checker" || simulatedRole === "approver" || simulatedRole === "admin") {
+      // Staff can ONLY action cards actively assigned to their specific department (unless Admin override)
+      if (simulatedRole !== "admin" && departmentName && app.department !== departmentName) {
         return <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide italic">Not in your department</span>;
       }
 
-      if (simulatedRole === "checker" && app.status === "scrutiny") {
+      const statusLower = app.status?.toLowerCase();
+
+      // Scrutiny stage actions (Checker or Admin)
+      if ((simulatedRole === "checker" || simulatedRole === "admin") && (statusLower === "scrutiny" || statusLower === "submitted")) {
         return (
           <div className="flex gap-2 w-full">
-            <button className="flex-1 rounded bg-emerald-700 hover:bg-emerald-800 px-2 py-1.5 text-[10px] font-bold text-white uppercase tracking-wide">Verify</button>
-            <button className="flex-1 rounded bg-[#ea580c] hover:bg-[#c2410c] px-2 py-1.5 text-[10px] font-bold text-white uppercase tracking-wide">Send Back</button>
+            <button
+              onClick={() => setActionModalState({ app, actionType: "verify" })}
+              className="flex-1 rounded bg-emerald-700 hover:bg-emerald-800 px-2 py-1.5 text-[10px] font-bold text-white uppercase tracking-wide transition-colors cursor-pointer"
+            >
+              Verify
+            </button>
+            <button
+              onClick={() => setActionModalState({ app, actionType: "send_back" })}
+              className="flex-1 rounded bg-[#ea580c] hover:bg-[#c2410c] px-2 py-1.5 text-[10px] font-bold text-white uppercase tracking-wide transition-colors cursor-pointer"
+            >
+              Send Back
+            </button>
           </div>
         );
       }
 
-      if (simulatedRole === "approver" && app.status === "awaiting_approval") {
+      // Approval stage actions (Approver or Admin)
+      if ((simulatedRole === "approver" || simulatedRole === "admin") && statusLower === "awaiting_approval") {
         return (
           <div className="flex gap-1 w-full">
-            <button className="flex-1 rounded bg-emerald-700 hover:bg-emerald-800 px-2 py-1.5 text-[9px] font-bold text-white uppercase tracking-wide">Approve</button>
-            <button className="flex-1 rounded bg-red-700 hover:bg-red-800 px-2 py-1.5 text-[9px] font-bold text-white uppercase tracking-wide">Decline</button>
-            <button className="flex-1 rounded bg-white border border-slate-400 hover:bg-slate-100 text-slate-700 px-2 py-1.5 text-[9px] font-bold uppercase tracking-wide">Hold</button>
+            <button
+              onClick={() => setActionModalState({ app, actionType: "approve" })}
+              className="flex-1 rounded bg-emerald-700 hover:bg-emerald-800 px-2 py-1.5 text-[9px] font-bold text-white uppercase tracking-wide transition-colors cursor-pointer"
+            >
+              Approve
+            </button>
+            <button
+              onClick={() => setActionModalState({ app, actionType: "decline" })}
+              className="flex-1 rounded bg-red-700 hover:bg-red-800 px-2 py-1.5 text-[9px] font-bold text-white uppercase tracking-wide transition-colors cursor-pointer"
+            >
+              Decline
+            </button>
+            <button
+              onClick={() => setActionModalState({ app, actionType: "hold" })}
+              className="flex-1 rounded bg-white border border-slate-400 hover:bg-slate-100 text-slate-700 px-2 py-1.5 text-[9px] font-bold uppercase tracking-wide transition-colors cursor-pointer"
+            >
+              Hold
+            </button>
           </div>
         );
       }
@@ -149,8 +198,15 @@ export default function UnifiedKanbanDashboard() {
 
     // 4. Applicant Actions
     if (simulatedRole === "applicant") {
-      if (app.status === "needs_correction") {
-        return <button className="rounded bg-[#ea580c] hover:bg-[#c2410c] px-3 py-1.5 text-[10px] font-bold text-white uppercase tracking-wide w-full">Upload Missing Docs</button>;
+      if (app.status?.toLowerCase() === "needs_correction") {
+        return (
+          <button
+            onClick={() => setActionModalState({ app, actionType: "resubmit" })}
+            className="rounded bg-[#ea580c] hover:bg-[#c2410c] px-3 py-1.5 text-[10px] font-bold text-white uppercase tracking-wide w-full transition-colors cursor-pointer"
+          >
+            Upload Missing Docs
+          </button>
+        );
       }
       return (
         <button
@@ -219,7 +275,13 @@ export default function UnifiedKanbanDashboard() {
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Simulate:</span>
               <select
                 value={simulatedRole}
-                onChange={(e) => setSimulatedRole(e.target.value)}
+                onChange={(e) => {
+                  const newRole = e.target.value;
+                  setSimulatedRole(newRole);
+                  if ((newRole === "checker" || newRole === "approver") && !departmentName) {
+                    setDepartmentName("Town Planning Department");
+                  }
+                }}
                 className="rounded border border-slate-300 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-800 outline-none focus:border-[#ea580c] shadow-sm"
               >
                 <option value="admin">🦸‍♂️ Admin Override</option>
@@ -227,6 +289,21 @@ export default function UnifiedKanbanDashboard() {
                 <option value="checker">🕵️‍♂️ Checker Mode</option>
                 <option value="approver">✍️ Approver Mode</option>
                 <option value="citizen">👁️ Citizen Mode</option>
+              </select>
+            </div>
+          )}
+
+          {(simulatedRole === "checker" || simulatedRole === "approver") && (
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Dept:</span>
+              <select
+                value={departmentName || "Town Planning Department"}
+                onChange={(e) => setDepartmentName(e.target.value)}
+                className="rounded border border-slate-300 bg-white px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-800 outline-none focus:border-[#ea580c] shadow-sm"
+              >
+                <option value="Town Planning Department">Town Planning</option>
+                <option value="Fire & Safety Department">Fire & Safety</option>
+                <option value="Environment Department">Environment</option>
               </select>
             </div>
           )}
@@ -329,6 +406,16 @@ export default function UnifiedKanbanDashboard() {
         isOpen={Boolean(selectedRecordApp)}
         onClose={() => setSelectedRecordApp(null)}
         application={selectedRecordApp}
+      />
+
+      <WorkflowActionModal
+        isOpen={Boolean(actionModalState)}
+        onClose={() => setActionModalState(null)}
+        application={actionModalState?.app || null}
+        actionType={actionModalState?.actionType || null}
+        departmentName={departmentName}
+        actorUserId={currentUser?.id}
+        onActionComplete={() => loadApplications()}
       />
     </div>
   );

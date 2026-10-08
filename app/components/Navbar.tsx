@@ -18,20 +18,8 @@ interface SessionUser {
 const SESSION_KEY = "linkup_session_token";
 const USER_KEY = "linkup_user";
 
-function getRoleDashboardPath(role: SessionUser["role"] | string) {
-  switch (role) {
-    case "checker":
-      return "/dashboard/checker";
-    case "approver":
-      return "/dashboard/approver";
-    case "citizen":
-      return "/dashboard/citizen";
-    case "admin":
-      return "/dashboard";
-    case "applicant":
-    default:
-      return "/dashboard/applicant";
-  }
+function getRoleDashboardPath(_role?: SessionUser["role"] | string) {
+  return "/dashboard";
 }
 
 export default function Navbar({ onLoginClick, onRegisterClick }: NavbarProps) {

@@ -9,21 +9,26 @@ export async function GET(request: Request) {
 
     const query = `
       SELECT 
+        a.id as uuid,
         a.application_number as id,
         a.status,
         COALESCE(d.name, 'Pending Setup') as department,
         (
           SELECT GROUP_CONCAT(name, ',')
-          FROM departments
-          WHERE sort_order < d.sort_order OR (sort_order = d.sort_order AND a.status = 'approved')
+          FROM (
+            SELECT name 
+            FROM departments 
+            WHERE sort_order < d.sort_order OR (sort_order = d.sort_order AND LOWER(a.status) = 'approved')
+            ORDER BY sort_order ASC
+          )
         ) as approved_by_list,
         COALESCE(ap.applicant_name, u.name, 'Unknown Applicant') as applicant,
         COALESCE(b.project_name, 'Untitled Project') as project,
         COALESCE(a.submission_date, a.created_at) as date,
         CASE 
-          WHEN a.status = 'approved' THEN 100
-          WHEN a.status = 'awaiting_approval' THEN 80
-          WHEN a.status = 'scrutiny' THEN 40
+          WHEN LOWER(a.status) = 'approved' THEN 100
+          WHEN LOWER(a.status) = 'awaiting_approval' THEN 80
+          WHEN LOWER(a.status) IN ('scrutiny', 'submitted') THEN 40
           ELSE 10
         END as progress
       FROM applications a
