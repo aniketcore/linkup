@@ -22,6 +22,12 @@
 			"database_id": "cc8cd607-5234-41a5-9940-8ac04bca3a24"
 		}
 	],
+	"r2_buckets": [
+		{
+			"binding": "STORAGE",
+			"bucket_name": "linkup-bucket"
+		}
+	],
 	"observability": {
 		"enabled": true
 	},
