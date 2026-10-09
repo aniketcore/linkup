@@ -466,8 +466,8 @@ export default function HelpdeskChatbot() {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="bot-float-btn bot-shimmer-effect overflow-hidden fixed bottom-5 right-5 z-40 text-white border-2 border-[#ea580c] shadow-[0_8px_30px_rgba(0,51,102,0.45)] hover:shadow-[0_12px_35px_rgba(234,88,12,0.55)] w-[320px] px-8 py-3.5 rounded-full font-bold flex items-center justify-start gap-4 cursor-pointer transition-transform hover:scale-105 group"
           title="Ask LinkUp Virtual Helpdesk / सहायता केंद्र"
+          className="bot-float-btn bot-shimmer-effect overflow-hidden fixed bottom-5 right-5 z-40 text-white border-2 border-[#ea580c] shadow-[0_8px_30px_rgba(0,51,102,0.45)] hover:shadow-[0_12px_35px_rgba(234,88,12,0.55)] w-[320px] px-8 py-3.5 rounded-full font-bold flex items-center justify-start gap-4 cursor-pointer transition-transform hover:scale-105 group"
           aria-label="Open LinkUp Helpdesk Chatbot"
         >
           {/* Subtle animated light gleam line */}
