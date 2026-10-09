@@ -188,9 +188,9 @@ export default function Home() {
                 </button>
                 <a
                   href="#tracking"
-                  className="bg-white hover:bg-slate-100 text-[#003366] px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded shadow flex items-center gap-2 transition-all cursor-pointer"
+                  className="bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 px-5 py-2.5 text-xs font-extrabold uppercase tracking-wider rounded shadow-lg border-2 border-amber-200 flex items-center gap-2 transition-all cursor-pointer hover:scale-105"
                 >
-                  <span>🔍</span> Citizen Status Inquiry
+                  <span className="text-sm">🔍</span> Citizen Status Inquiry / स्थिति जांचें
                 </a>
                 <button
                   type="button"
@@ -432,9 +432,9 @@ export default function Home() {
                 />
                 <button
                   type="submit"
-                  className="bg-[#003366] hover:bg-[#002244] text-white px-6 py-2 text-xs font-bold uppercase tracking-wider rounded transition-colors"
+                  className="bg-[#ea580c] hover:bg-[#c2410c] text-white px-6 py-2 text-xs font-bold uppercase tracking-wider rounded shadow flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  Search Status / खोजें
+                  <span>🔍</span> Search Status / खोजें
                 </button>
               </div>
 

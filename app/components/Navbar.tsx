@@ -103,11 +103,11 @@ export default function Navbar({ onLoginClick, onRegisterClick }: NavbarProps) {
         onClose={() => setAccessibilityOpen(false)}
       />
 
-      {/* Floating Bottom-Right Accessibility Button (GIGW Standard) */}
+      {/* Floating Bottom-Left Accessibility Button (GIGW Standard) */}
       <button
         type="button"
         onClick={() => setAccessibilityOpen(true)}
-        className="fixed bottom-5 right-5 z-40 bg-[#003366] hover:bg-[#002244] text-white border-2 border-[#ea580c] shadow-2xl px-3.5 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-transform hover:scale-105"
+        className="fixed bottom-5 left-5 z-40 bg-[#003366] hover:bg-[#002244] text-white border-2 border-[#ea580c] shadow-2xl px-3.5 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-transform hover:scale-105"
         title="Accessibility Options / सुगम्यता विकल्प"
         aria-label="Open Accessibility Tools"
       >
@@ -334,9 +334,9 @@ export default function Navbar({ onLoginClick, onRegisterClick }: NavbarProps) {
             </a>
             <a
               href="#tracking"
-              className="px-4 py-3 hover:bg-[#082b47] border-r border-[#164e7a] transition-colors"
+              className="px-4 py-3 bg-[#082b47] text-amber-300 hover:bg-[#ea580c] hover:text-white font-bold border-r border-[#164e7a] transition-colors flex items-center gap-1.5"
             >
-              Citizen Status Inquiry
+              <span>🔍</span> Citizen Status Inquiry
             </a>
             <a
               href="#features"
