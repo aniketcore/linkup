@@ -146,10 +146,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col font-sans selection:bg-[#003366] selection:text-white" id="main-content">
       {/* Official Government Header & Accessibility Bar */}
-      <Navbar
-        onLoginClick={() => handleOpenAuth("login")}
-        onRegisterClick={() => handleOpenAuth("register")}
-      />
+      <Navbar />
 
       {/* Role-based Auth Modal */}
       <AuthModal
@@ -180,26 +177,24 @@ export default function Home() {
 
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => handleOpenAuth("login")}
+                <a
+                  href="/register"
                   className="bg-[#ea580c] hover:bg-[#c2410c] text-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded shadow flex items-center gap-2 transition-all cursor-pointer"
                 >
-                  <span>📝</span> Apply for Building Permit
-                </button>
+                  <span>📝</span> Apply for Building Permit / नया आवेदन
+                </a>
                 <a
                   href="#tracking"
                   className="bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 px-5 py-2.5 text-xs font-extrabold uppercase tracking-wider rounded shadow-lg border-2 border-amber-200 flex items-center gap-2 transition-all cursor-pointer hover:scale-105"
                 >
                   <span className="text-sm">🔍</span> Citizen Status Inquiry / स्थिति जांचें
                 </a>
-                <button
-                  type="button"
-                  onClick={() => handleOpenAuth("login")}
+                <a
+                  href="/login"
                   className="bg-[#082b47] hover:bg-[#051c30] text-amber-300 border border-amber-400/40 px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded transition-all cursor-pointer"
                 >
-                  <span>🔐</span> Department Officer Login
-                </button>
+                  <span>🔐</span> Department Officer Login / अधिकारी लॉगिन
+                </a>
               </div>
 
               {/* Statutory Metric Strips */}
@@ -845,9 +840,9 @@ export default function Home() {
                 PORTALS & SERVICES
               </h4>
               <ul className="space-y-2 text-[11px] text-slate-300">
-                <li><button onClick={() => handleOpenAuth("login")} className="hover:text-white hover:underline">Applicant Portal Filing</button></li>
-                <li><button onClick={() => handleOpenAuth("login")} className="hover:text-white hover:underline">Town Planning Scrutiny Screen</button></li>
-                <li><button onClick={() => handleOpenAuth("login")} className="hover:text-white hover:underline">Fire & Safety Approver Screen</button></li>
+                <li><a href="/register" className="hover:text-white hover:underline">Applicant Portal Filing / पंजीकरण</a></li>
+                <li><a href="/login" className="hover:text-white hover:underline">Town Planning Scrutiny Screen</a></li>
+                <li><a href="/login" className="hover:text-white hover:underline">Fire & Safety Approver Screen</a></li>
                 <li><a href="#tracking" className="hover:text-white hover:underline">Citizen Application Status Inquiry</a></li>
               </ul>
             </div>
@@ -874,13 +869,12 @@ export default function Home() {
                 Toll-Free Grievance Helpline: <strong>1800-11-2026</strong> (Mon–Sat, 9:30 AM to 6:00 PM IST).<br />
                 Email: <strong>helpdesk@linkup.gov.in</strong>
               </p>
-              <button
-                type="button"
-                onClick={() => handleOpenAuth("login")}
-                className="rounded bg-[#ea580c] hover:bg-[#c2410c] text-white px-3 py-1.5 font-bold text-xs"
+              <a
+                href="/login"
+                className="inline-block rounded bg-[#ea580c] hover:bg-[#c2410c] text-white px-3 py-1.5 font-bold text-xs"
               >
-                Access Official Portal
-              </button>
+                Access Official Portal / लॉगिन
+              </a>
             </div>
           </div>
 
