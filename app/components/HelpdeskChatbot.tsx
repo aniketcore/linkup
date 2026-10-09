@@ -101,8 +101,8 @@ const STUCK_CATEGORIES: Record<
     ],
     action: { label: "Open Citizen Status Inquiry Box", href: "/#tracking" },
     followUps: [
-      { label: "Test with Approved File (BP-2026-000001)", onClickAction: "track_sample_1" },
-      { label: "Test with Active Scrutiny (BP-2026-000002)", onClickAction: "track_sample_2" },
+      { label: "Test with Approved File (BP-2026-000001)", key: "track_sample_1" },
+      { label: "Test with Active Scrutiny (BP-2026-000002)", key: "track_sample_2" },
       { label: "Back to Helpdesk Menu", key: "main_menu" }
     ]
   },
@@ -200,6 +200,7 @@ export default function HelpdeskChatbot() {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [inputText, setInputText] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -210,7 +211,7 @@ export default function HelpdeskChatbot() {
     if (isOpen) {
       scrollToBottom();
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isTyping]);
 
   const handleSelectCategory = (categoryKey: string) => {
     if (categoryKey === "main_menu") {
@@ -237,19 +238,24 @@ export default function HelpdeskChatbot() {
       timestamp: "Just now"
     };
 
-    const botMsg: Message = {
-      id: `bot-${Date.now() + 1}`,
-      sender: "bot",
-      text: item.botResponse,
-      steps: item.steps,
-      actionLink: item.action,
-      options: item.followUps || [
-        { label: "⬅️ Back to Main Help Menu", key: "main_menu" }
-      ],
-      timestamp: "Just now"
-    };
+    setMessages((prev) => [...prev, userMsg]);
+    setIsTyping(true);
 
-    setMessages((prev) => [...prev, userMsg, botMsg]);
+    setTimeout(() => {
+      const botMsg: Message = {
+        id: `bot-${Date.now() + 1}`,
+        sender: "bot",
+        text: item.botResponse,
+        steps: item.steps,
+        actionLink: item.action,
+        options: item.followUps || [
+          { label: "⬅️ Back to Main Help Menu", key: "main_menu" }
+        ],
+        timestamp: "Just now"
+      };
+      setMessages((prev) => [...prev, botMsg]);
+      setIsTyping(false);
+    }, 450);
   };
 
   const handleActionClick = (action: { label: string; href?: string; onClickAction?: string }) => {
@@ -280,84 +286,90 @@ export default function HelpdeskChatbot() {
       timestamp: "Just now"
     };
 
-    // Check if user entered an application number like BP-2026-000001
-    const appMatch = query.match(/BP[-_ ]?2026[-_ ]?\d+/i);
-    let botMsg: Message;
+    setMessages((prev) => [...prev, userMsg]);
+    setInputText("");
+    setIsTyping(true);
 
-    if (appMatch) {
-      const appId = appMatch[0].toUpperCase().replace(" ", "-");
-      botMsg = {
-        id: `bot-${Date.now() + 1}`,
-        sender: "bot",
-        text: `Found permit record reference for ${appId}. You can verify the full multi-department clearance history below:`,
-        steps: [
-          `Application Reference: ${appId}`,
-          "Statutory Departments: Town Planning ➔ Fire & Safety ➔ Environment",
-          "Public Transparency Mode: Personal identity proofs remain protected as per Rule BR-10."
-        ],
-        actionLink: {
-          label: `Inspect Live Status for ${appId}`,
-          href: `/?app=${appId}#tracking`
-        },
-        options: [
-          { label: "What does 'Sent Back' mean?", key: "sent_back" },
-          { label: "Why is Fire Dept locked?", key: "locked_departments" },
-          { label: "Back to Main Help Menu", key: "main_menu" }
-        ],
-        timestamp: "Just now"
-      };
-    } else {
-      // Smart intent matching
-      const lower = query.toLowerCase();
-      let matchedKey = "";
+    setTimeout(() => {
+      // Check if user entered an application number like BP-2026-000001
+      const appMatch = query.match(/BP[-_ ]?2026[-_ ]?\d+/i);
+      let botMsg: Message;
 
-      if (lower.includes("submit") || lower.includes("button") || lower.includes("error") || lower.includes("apply")) {
-        matchedKey = "submission_error";
-      } else if (lower.includes("sent back") || lower.includes("resubmit") || lower.includes("remark") || lower.includes("defect")) {
-        matchedKey = "sent_back";
-      } else if (lower.includes("hold") || lower.includes("pause") || lower.includes("court") || lower.includes("clarification")) {
-        matchedKey = "on_hold";
-      } else if (lower.includes("fire") || lower.includes("environment") || lower.includes("lock") || lower.includes("sequence")) {
-        matchedKey = "locked_departments";
-      } else if (lower.includes("track") || lower.includes("number") || lower.includes("status") || lower.includes("where")) {
-        matchedKey = "lost_tracking_id";
-      } else if (lower.includes("delay") || lower.includes("late") || lower.includes("sla") || lower.includes("time") || lower.includes("days")) {
-        matchedKey = "sla_delay";
-      } else if (lower.includes("upload") || lower.includes("pdf") || lower.includes("size") || lower.includes("format")) {
-        matchedKey = "upload_failed";
-      }
-
-      if (matchedKey && STUCK_CATEGORIES[matchedKey]) {
-        const item = STUCK_CATEGORIES[matchedKey];
+      if (appMatch) {
+        const appId = appMatch[0].toUpperCase().replace(" ", "-");
         botMsg = {
           id: `bot-${Date.now() + 1}`,
           sender: "bot",
-          text: item.botResponse,
-          steps: item.steps,
-          actionLink: item.action,
-          options: item.followUps || [{ label: "Back to Main Menu", key: "main_menu" }],
-          timestamp: "Just now"
-        };
-      } else {
-        botMsg = {
-          id: `bot-${Date.now() + 1}`,
-          sender: "bot",
-          text: `I understand you have an inquiry regarding: "${query}". Please select the exact stage where you are experiencing difficulty so I can give you the step-by-step resolution:`,
+          text: `Found permit record reference for ${appId}. You can verify the full multi-department clearance history below:`,
+          steps: [
+            `Application Reference: ${appId}`,
+            "Statutory Departments: Town Planning ➔ Fire & Safety ➔ Environment",
+            "Public Transparency Mode: Personal identity proofs remain protected as per Rule BR-10."
+          ],
+          actionLink: {
+            label: `Inspect Live Status for ${appId}`,
+            href: `/?app=${appId}#tracking`
+          },
           options: [
-            { label: "1. 📝 Stuck during Application Submission", key: "submission_error" },
-            { label: "2. 🔄 My file was 'Sent Back' by Department", key: "sent_back" },
-            { label: "3. ⏸️ My file was placed 'On Hold'", key: "on_hold" },
-            { label: "4. 🔒 Why is downstream department 'Locked'?", key: "locked_departments" },
-            { label: "5. 🔍 Track an Application Number", key: "lost_tracking_id" },
-            { label: "6. 📞 Escalate to Nodal Helpdesk", key: "sla_delay" }
+            { label: "What does 'Sent Back' mean?", key: "sent_back" },
+            { label: "Why is Fire Dept locked?", key: "locked_departments" },
+            { label: "Back to Main Help Menu", key: "main_menu" }
           ],
           timestamp: "Just now"
         };
-      }
-    }
+      } else {
+        // Smart intent matching
+        const lower = query.toLowerCase();
+        let matchedKey = "";
 
-    setMessages((prev) => [...prev, userMsg, botMsg]);
-    setInputText("");
+        if (lower.includes("submit") || lower.includes("button") || lower.includes("error") || lower.includes("apply")) {
+          matchedKey = "submission_error";
+        } else if (lower.includes("sent back") || lower.includes("resubmit") || lower.includes("remark") || lower.includes("defect")) {
+          matchedKey = "sent_back";
+        } else if (lower.includes("hold") || lower.includes("pause") || lower.includes("court") || lower.includes("clarification")) {
+          matchedKey = "on_hold";
+        } else if (lower.includes("fire") || lower.includes("environment") || lower.includes("lock") || lower.includes("sequence")) {
+          matchedKey = "locked_departments";
+        } else if (lower.includes("track") || lower.includes("number") || lower.includes("status") || lower.includes("where")) {
+          matchedKey = "lost_tracking_id";
+        } else if (lower.includes("delay") || lower.includes("late") || lower.includes("sla") || lower.includes("time") || lower.includes("days")) {
+          matchedKey = "sla_delay";
+        } else if (lower.includes("upload") || lower.includes("pdf") || lower.includes("size") || lower.includes("format")) {
+          matchedKey = "upload_failed";
+        }
+
+        if (matchedKey && STUCK_CATEGORIES[matchedKey]) {
+          const item = STUCK_CATEGORIES[matchedKey];
+          botMsg = {
+            id: `bot-${Date.now() + 1}`,
+            sender: "bot",
+            text: item.botResponse,
+            steps: item.steps,
+            actionLink: item.action,
+            options: item.followUps || [{ label: "Back to Main Menu", key: "main_menu" }],
+            timestamp: "Just now"
+          };
+        } else {
+          botMsg = {
+            id: `bot-${Date.now() + 1}`,
+            sender: "bot",
+            text: `I understand you have an inquiry regarding: "${query}". Please select the exact stage where you are experiencing difficulty so I can give you the step-by-step resolution:`,
+            options: [
+              { label: "1. 📝 Stuck during Application Submission", key: "submission_error" },
+              { label: "2. 🔄 My file was 'Sent Back' by Department", key: "sent_back" },
+              { label: "3. ⏸️ My file was placed 'On Hold'", key: "on_hold" },
+              { label: "4. 🔒 Why is downstream department 'Locked'?", key: "locked_departments" },
+              { label: "5. 🔍 Track an Application Number", key: "lost_tracking_id" },
+              { label: "6. 📞 Escalate to Nodal Helpdesk", key: "sla_delay" }
+            ],
+            timestamp: "Just now"
+          };
+        }
+      }
+
+      setMessages((prev) => [...prev, botMsg]);
+      setIsTyping(false);
+    }, 450);
   };
 
   const handleSpeak = (textToSpeak: string) => {
@@ -386,59 +398,142 @@ export default function HelpdeskChatbot() {
 
   return (
     <>
+      {/* Keyframe & Animation styles */}
+      <style>{`
+        @keyframes floatBot {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-5px); }
+        }
+        @keyframes shimmerGlow {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        @keyframes radarRipple {
+          0% { transform: scale(0.9); opacity: 0.9; }
+          50% { transform: scale(1.6); opacity: 0.3; }
+          100% { transform: scale(2.2); opacity: 0; }
+        }
+        @keyframes botWiggle {
+          0%, 100% { transform: rotate(0deg); }
+          25% { transform: rotate(-8deg); }
+          75% { transform: rotate(8deg); }
+        }
+        @keyframes teaserSlide {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
+        }
+        @keyframes popupSlideUp {
+          from { opacity: 0; transform: translateY(20px) scale(0.97); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes msgSlide {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes dotTyping {
+          0%, 80%, 100% { transform: scale(0); opacity: 0.4; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+
+        .bot-float-btn {
+          animation: floatBot 3.5s ease-in-out infinite;
+        }
+        .bot-shimmer-effect {
+          background-size: 250% 100%;
+          background-image: linear-gradient(
+            115deg,
+            #002b4f 0%,
+            #003366 35%,
+            #0a4b8f 50%,
+            #003366 65%,
+            #002b4f 100%
+          );
+          animation: shimmerGlow 6s ease-in-out infinite;
+        }
+        .bot-chat-popup {
+          animation: popupSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .msg-anim {
+          animation: msgSlide 0.2s ease-out forwards;
+        }
+        .typing-dot-1 { animation: dotTyping 1.4s infinite ease-in-out both; animation-delay: -0.32s; }
+        .typing-dot-2 { animation: dotTyping 1.4s infinite ease-in-out both; animation-delay: -0.16s; }
+        .typing-dot-3 { animation: dotTyping 1.4s infinite ease-in-out both; }
+      `}</style>
+
       {/* Floating Chat Trigger Button on Bottom-Right */}
       {!isOpen && (
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-5 right-5 z-40 bg-[#003366] hover:bg-[#002244] text-white border-2 border-[#ea580c] shadow-2xl px-4 py-2.5 rounded-full text-xs font-bold flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 group"
+          className="bot-float-btn bot-shimmer-effect overflow-hidden fixed bottom-5 right-5 z-40 text-white border-2 border-[#ea580c] shadow-[0_8px_30px_rgba(0,51,102,0.45)] hover:shadow-[0_12px_35px_rgba(234,88,12,0.55)] w-[320px] px-8 py-3.5 rounded-full font-bold flex items-center justify-start gap-4 cursor-pointer transition-transform hover:scale-105 group"
           title="Ask LinkUp Virtual Helpdesk / सहायता केंद्र"
           aria-label="Open LinkUp Helpdesk Chatbot"
         >
-          <span className="flex h-3 w-3 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-          </span>
-          <span className="text-base">💬</span>
-          <div className="flex flex-col text-left leading-tight">
-            <span className="text-xs font-extrabold text-amber-300">Ask LinkUp</span>
-            <span className="text-[10px] text-slate-200">सुगम साथी • 24×7 Help</span>
+          {/* Subtle animated light gleam line */}
+          <span className="absolute inset-0 w-1/3 h-full bg-white/10 skew-x-12 -translate-x-full group-hover:translate-x-[400%] transition-transform duration-1000 ease-out pointer-events-none" />
+
+          {/* Radar Live Indicator Dot */}
+          <div className="relative flex h-4 w-4 shrink-0">
+            <span
+              style={{ animation: "radarRipple 2s cubic-bezier(0, 0.2, 0.8, 1) infinite" }}
+              className="absolute inline-flex h-full w-full rounded-full bg-emerald-400"
+            />
+            <span className="animate-ping absolute inline-flex h-4 w-4 rounded-full bg-emerald-400 opacity-80" />
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 ring-2 ring-emerald-300/40" />
+          </div>
+
+          {/* Animated Chat Bubble */}
+          <div
+            style={{ animation: "botWiggle 4s ease-in-out infinite" }}
+            className="shrink-0 flex items-center justify-center text-2xl group-hover:rotate-6 transition-transform"
+          >
+            💬
+          </div>
+
+          {/* Text Container */}
+          <div className="flex flex-col text-left leading-tight gap-0.5 relative z-10">
+            <span className="text-base font-extrabold text-amber-300">Ask LinkUp</span>
+            <span className="text-[13px] text-slate-200">सुगम साथी • 24×7 Help</span>
           </div>
         </button>
       )}
 
-      {/* Chatbot Window */}
+      {/* Chatbot Window with Pop-up Animation */}
       {isOpen && (
         <div
-          className="fixed bottom-5 right-5 z-50 w-[92vw] sm:w-[410px] h-[580px] max-h-[85vh] bg-white border-2 border-[#003366] rounded-t-lg rounded-b-none shadow-2xl flex flex-col overflow-hidden font-sans text-xs"
+          className="bot-chat-popup fixed bottom-5 right-5 z-50 w-[94vw] sm:w-[440px] h-[600px] max-h-[88vh] bg-white border-2 border-[#003366] rounded-2xl shadow-[0_20px_50px_rgba(0,25,50,0.45)] flex flex-col overflow-hidden font-sans text-xs ring-1 ring-black/5"
           role="dialog"
           aria-label="LinkUp Virtual Helpdesk Chatbot"
         >
           {/* Header */}
-          <div className="bg-[#003366] text-white px-4 py-3 flex items-center justify-between border-b-2 border-[#ea580c] shrink-0">
+          <div className="bg-gradient-to-r from-[#003366] via-[#0b3b60] to-[#124b7a] text-white px-4 py-3.5 flex items-center justify-between border-b-2 border-[#ea580c] shrink-0 shadow-md">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-amber-300 text-base">
+              <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center border border-amber-300/60 text-lg shadow-inner">
                 🏛️
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-bold text-xs text-white">Ask LinkUp • Virtual Helpdesk</h3>
-                  <span className="bg-emerald-500 text-[9px] font-bold text-white px-1.5 py-0.2 rounded-full">
+                  <h3 className="font-extrabold text-sm text-white tracking-tight">
+                    Ask LinkUp • Virtual Helpdesk
+                  </h3>
+                  <span className="bg-emerald-500 text-[9px] font-extrabold text-white px-1.5 py-0.2 rounded-full shadow-xs flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
                     LIVE
                   </span>
                 </div>
-                <p className="text-[10px] text-amber-200">
-                  सुगम साथी • Step-by-Step Municipal Guidance
+                <p className="text-[10px] text-amber-200 font-medium">
+                  सुगम साथी • 24×7 Municipal Permit Assistance
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               {/* Reset Chat */}
               <button
                 type="button"
                 onClick={resetChat}
-                className="p-1 text-slate-300 hover:text-white rounded"
+                className="p-1.5 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                 title="Reset conversation"
               >
                 🔄
@@ -447,7 +542,11 @@ export default function HelpdeskChatbot() {
               <button
                 type="button"
                 onClick={() => handleSpeak(messages[messages.length - 1]?.text || "")}
-                className={`p-1 rounded ${isSpeaking ? "text-amber-300 animate-pulse" : "text-slate-300 hover:text-white"}`}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  isSpeaking
+                    ? "text-amber-300 bg-amber-400/20 animate-pulse"
+                    : "text-slate-300 hover:text-white hover:bg-white/10"
+                }`}
                 title="Read aloud last response"
               >
                 {isSpeaking ? "⏹️" : "🔊"}
@@ -462,7 +561,7 @@ export default function HelpdeskChatbot() {
                   }
                   setIsOpen(false);
                 }}
-                className="p-1 text-slate-300 hover:text-amber-300 font-bold text-sm px-1.5"
+                className="p-1.5 text-slate-300 hover:text-amber-300 hover:bg-white/10 rounded-lg font-bold text-base transition-colors"
                 title="Close Helpdesk Chat"
               >
                 ✕
@@ -471,23 +570,27 @@ export default function HelpdeskChatbot() {
           </div>
 
           {/* Sub-banner disclaimer */}
-          <div className="bg-slate-100 border-b border-slate-200 px-3 py-1.5 text-[10px] text-slate-600 flex items-center justify-between">
-            <span>Official Guide for Building Permit Clearances</span>
-            <span className="font-semibold text-blue-900">MoHUA / NIC Compliant</span>
+          <div className="bg-slate-100 border-b border-slate-200 px-3.5 py-1.5 text-[10px] text-slate-600 flex items-center justify-between">
+            <span className="flex items-center gap-1 font-medium">
+              <span className="text-amber-600">⚡</span> Official Instant Guide for Clearances
+            </span>
+            <span className="font-semibold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+              MoHUA & NIC Compliant
+            </span>
           </div>
 
           {/* Messages Body */}
-          <div className="flex-1 p-3 overflow-y-auto space-y-3 bg-[#f8fafc]">
+          <div className="flex-1 p-3.5 overflow-y-auto space-y-3 bg-[#f8fafc]">
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}
+                className={`msg-anim flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}
               >
                 <div
-                  className={`max-w-[88%] rounded-lg p-3 text-xs leading-relaxed shadow-sm ${
+                  className={`max-w-[88%] rounded-2xl p-3 text-xs leading-relaxed shadow-sm transition-all ${
                     msg.sender === "user"
-                      ? "bg-[#003366] text-white rounded-tr-none"
-                      : "bg-white border border-slate-300 text-slate-800 rounded-tl-none"
+                      ? "bg-gradient-to-r from-[#003366] to-[#0b3b60] text-white rounded-tr-none"
+                      : "bg-white border border-slate-200 text-slate-800 rounded-tl-none ring-1 ring-slate-100"
                   }`}
                 >
                   {/* Message main text */}
@@ -496,12 +599,14 @@ export default function HelpdeskChatbot() {
                   {/* Numbered Step-by-step guidance list */}
                   {msg.steps && msg.steps.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-slate-200/80 space-y-1.5">
-                      <span className="text-[10px] font-bold text-[#003366] uppercase tracking-wide block">
-                        Recommended Action Steps:
+                      <span className="text-[10px] font-bold text-[#003366] uppercase tracking-wide block flex items-center gap-1">
+                        <span>📋</span> Recommended Action Steps:
                       </span>
                       {msg.steps.map((st, sIdx) => (
                         <div key={sIdx} className="flex items-start gap-1.5 text-[11px] text-slate-700">
-                          <span className="font-bold text-[#ea580c] shrink-0">{sIdx + 1}.</span>
+                          <span className="font-bold text-[#ea580c] bg-orange-50 px-1 rounded shrink-0">
+                            {sIdx + 1}.
+                          </span>
                           <span>{st}</span>
                         </div>
                       ))}
@@ -514,7 +619,7 @@ export default function HelpdeskChatbot() {
                       <button
                         type="button"
                         onClick={() => handleActionClick(msg.actionLink!)}
-                        className="w-full bg-[#ea580c] hover:bg-[#c2410c] text-white py-1.5 px-3 rounded font-bold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        className="w-full bg-[#ea580c] hover:bg-[#c2410c] text-white py-1.5 px-3 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow hover:scale-[1.01] cursor-pointer"
                       >
                         <span>👉</span> {msg.actionLink.label}
                       </button>
@@ -524,14 +629,16 @@ export default function HelpdeskChatbot() {
 
                 {/* Follow-up Question Chips */}
                 {msg.options && msg.options.length > 0 && (
-                  <div className="mt-2 flex flex-col gap-1 w-[90%] pl-1">
-                    <span className="text-[10px] font-bold text-slate-500">Suggested Topics / आगे के विकल्प:</span>
+                  <div className="mt-2 flex flex-col gap-1 w-[92%] pl-1">
+                    <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                      <span>💡</span> Suggested Topics / आगे के विकल्प:
+                    </span>
                     {msg.options.map((opt, oIdx) => (
                       <button
                         key={oIdx}
                         type="button"
                         onClick={() => handleSelectCategory(opt.key)}
-                        className="text-left bg-white hover:bg-blue-50 border border-slate-300 hover:border-[#003366] text-slate-800 hover:text-[#003366] px-2.5 py-1.5 rounded text-[11px] font-medium transition-colors shadow-xs"
+                        className="text-left bg-white hover:bg-blue-50 border border-slate-200 hover:border-[#003366] text-slate-800 hover:text-[#003366] px-3 py-2 rounded-xl text-[11px] font-medium transition-all shadow-xs hover:shadow-sm hover:translate-x-1"
                       >
                         {opt.label}
                       </button>
@@ -542,27 +649,40 @@ export default function HelpdeskChatbot() {
                 <span className="text-[9px] text-slate-400 mt-1 px-1">{msg.timestamp}</span>
               </div>
             ))}
+
+            {/* Realistic AI Typing Indicator */}
+            {isTyping && (
+              <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-3 py-2 w-fit shadow-xs">
+                <span className="text-[10px] text-slate-500 font-semibold mr-1">Sahayak is typing</span>
+                <span className="typing-dot-1 w-1.5 h-1.5 rounded-full bg-[#ea580c]"></span>
+                <span className="typing-dot-2 w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                <span className="typing-dot-3 w-1.5 h-1.5 rounded-full bg-[#003366]"></span>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
 
           {/* Input Footer */}
           <form
             onSubmit={handleSendMessage}
-            className="p-2.5 bg-white border-t border-slate-300 flex items-center gap-1.5 shrink-0"
+            className="p-3 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0"
           >
             <input
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Ask a question or enter Application ID..."
-              className="flex-1 border border-slate-300 rounded px-2.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#003366]"
+              placeholder="Ask a question or enter Application ID (e.g. BP-2026-000001)..."
+              className="flex-1 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#003366] focus:ring-1 focus:ring-[#003366] transition-all"
             />
             <button
               type="submit"
-              className="bg-[#003366] hover:bg-[#002244] text-white px-3.5 py-2 rounded text-xs font-bold transition-colors shrink-0"
+              disabled={!inputText.trim()}
+              className="bg-[#003366] hover:bg-[#002244] disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow hover:shadow-md shrink-0 flex items-center gap-1"
               title="Send Message"
             >
-              Send
+              <span>Send</span>
+              <span className="text-amber-300">➤</span>
             </button>
           </form>
         </div>
