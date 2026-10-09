@@ -18,6 +18,13 @@ function getDashboardPath(_role?: string) {
 
 export default function AuthModal({ isOpen, initialMode, onClose }: AuthModalProps) {
   const [mode, setMode] = useState<"login" | "register">(initialMode);
+
+  // Synchronize mode whenever initialMode changes or modal opens
+  React.useEffect(() => {
+    setMode(initialMode);
+    setErrorMessage("");
+    setSubmittedMessage("");
+  }, [initialMode, isOpen]);
   const [role, setRole] = useState<"applicant" | "checker" | "approver" | "citizen">("applicant");
   const [department, setDepartment] = useState("planning");
   const [submittedMessage, setSubmittedMessage] = useState("");

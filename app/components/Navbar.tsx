@@ -280,20 +280,19 @@ export default function Navbar({ onLoginClick, onRegisterClick }: NavbarProps) {
                 </>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    onClick={onLoginClick}
-                    className="inline-flex items-center justify-center rounded bg-[#003366] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#002244] shadow-sm transition-colors"
+                  <a
+                    href="/login"
+                    className="inline-flex items-center justify-center rounded bg-[#003366] px-3.5 py-1.5 text-xs font-bold text-white !text-white hover:!text-white hover:bg-[#002244] shadow-sm transition-colors"
+                    style={{ color: "#ffffff" }}
                   >
                     Portal Login
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onRegisterClick}
+                  </a>
+                  <a
+                    href="/register"
                     className="inline-flex items-center justify-center rounded border border-[#003366] bg-white px-3 py-1.5 text-xs font-bold text-[#003366] hover:bg-slate-50 transition-colors"
                   >
                     New Registration
-                  </button>
+                  </a>
                 </>
               )}
             </div>
@@ -380,13 +379,13 @@ export default function Navbar({ onLoginClick, onRegisterClick }: NavbarProps) {
           <div className="flex md:hidden w-full items-center justify-between py-2">
             <span className="text-xs font-bold text-amber-300">LinkUp Gov Portal</span>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onLoginClick}
-                className="rounded bg-[#ea580c] px-2.5 py-1 text-xs font-bold text-white"
+              <a
+                href="/login"
+                className="rounded bg-[#ea580c] px-2.5 py-1 text-xs font-bold text-white !text-white text-center"
+                style={{ color: "#ffffff" }}
               >
                 Login
-              </button>
+              </a>
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -428,18 +427,19 @@ export default function Navbar({ onLoginClick, onRegisterClick }: NavbarProps) {
                 </>
               ) : (
                 <>
-                  <button
-                    onClick={onLoginClick}
-                    className="w-full rounded bg-[#ea580c] py-1.5 font-bold text-white text-center"
+                  <a
+                    href="/login"
+                    className="w-full rounded bg-[#ea580c] py-1.5 font-bold text-white !text-white text-center"
+                    style={{ color: "#ffffff" }}
                   >
                     Login
-                  </button>
-                  <button
-                    onClick={onRegisterClick}
+                  </a>
+                  <a
+                    href="/register"
                     className="w-full rounded border border-white py-1.5 font-bold text-white text-center"
                   >
                     Register
-                  </button>
+                  </a>
                 </>
               )}
             </div>
