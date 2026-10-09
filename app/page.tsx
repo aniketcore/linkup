@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import AuthModal from "./components/AuthModal";
+import HelpdeskChatbot from "./components/HelpdeskChatbot";
 
 // Public permit records for instant verification
 const SAMPLE_APPLICATIONS = [
@@ -903,6 +904,9 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* 24x7 Official Virtual Helpdesk Chatbot */}
+      <HelpdeskChatbot />
     </div>
   );
 }
